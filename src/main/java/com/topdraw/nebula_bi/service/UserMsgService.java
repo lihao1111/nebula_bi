@@ -104,9 +104,9 @@ public class UserMsgService {
 
 			String queySql = "SELECT bf.*,abf.authentication_code FROM x_backoffice_feature bf INNER JOIN " +
 					"x_admin__backoffice_feature abf ON bf.name = abf.backoffice_feature_name " +
-					"WHERE abf.admin_id = ?";	//用户已有权限数据
+					"WHERE abf.admin_id = ? AND abf.authentication_code = 1";	//用户已有权限数据
 			List<Map<String, Object>> listFeature = DruidUtil.queryList(readConnection, queySql, adminId);
-
+/*
 			List<Map<String, Object>> retDates = new ArrayList<>();
 			for (Map<String, Object> map : listFeature) {
 				//任意node节点
@@ -132,8 +132,8 @@ public class UserMsgService {
 				}else{
 					((List<Map<String, Object>>) treeNodeParent.get("children")).add(treeNodeChildren);
 				}
-			}
-			ri = new ResultInfo<>("success", retDates, retDates.size(), null);
+			}*/
+			ri = new ResultInfo<>("success", listFeature, listFeature.size(), null);
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
