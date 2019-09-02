@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <properties>
+        <!--${sys:catalina.home}表示linux中环境变量中的tomcat根目录 -->
+        <Property name="log_path">springboot_nebulaBi/logs/nebula_bi</Property>
+        <Property name="pattern">[%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p] [%t] %c{1}:%m%n</Property>
+    </properties>
+    <Appenders>
+        <!--添加一个控制台追加器-->
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout>
+                <pattern>${pattern}</pattern>
+            </PatternLayout>
+        </Console>
+        <RollingFile name="RollingFileInfo" fileName="${log_path}.info"
+                     filePattern="${log_path}.info.%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <!-- 归档每天的文件 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <!-- 限制单个文件大小 -->
+                <!--<SizeBasedTriggeringPolicy size="10 MB"/>-->
+            </Policies>
+            <!-- 限制每天文件个数 -->
+            <!--<DefaultRolloverStrategy max="20"/>-->
+        </RollingFile>
+
+        <RollingFile name="RollingFileError" fileName="${log_path}.error"
+                     filePattern="${log_path}.error.%d{yyyy-MM-dd}.log">
+            <ThresholdFilter level="ERROR"/>
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <!-- 归档每天的文件 -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <!-- 限制单个文件大小 -->
+                <!--<SizeBasedTriggeringPolicy size="10 MB"/>-->
+            </Policies>
+            <!-- 限制每天文件个数 -->
+            <!--<DefaultRolloverStrategy compressionLevel="0" max="10"/>-->
+        </RollingFile>
+    </Appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息 -->
+        <root level="info">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="RollingFileInfo"/>
+            <appender-ref ref="RollingFileError"/>
+        </root>
+    </loggers>
+
+</Configuration>
