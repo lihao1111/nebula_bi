@@ -145,25 +145,4 @@ public class UseTimeService {
 		return ri;
 	}
 
-	public IResultInfo<Map<String, Object>> loadDayUseTime(Integer lPlatform, Date day) {
-		IResultInfo<Map<String, Object>> ri;
-		Connection readConnection = null;
-		try {
-			readConnection = DruidUtil.getRandomReadConnection();
-
-			String tabName = "bi_gscmcc_children_usetime";
-			String querySql = "SELECT * FROM "+tabName+" a WHERE day = ? AND platform_id = ?";
-
-			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(day, -1), ""), lPlatform);
-
-			ri = new ResultInfo<>("success", listControl, listControl.size(), "");
-
-		} catch (Exception ex) {
-			ri = new ResultInfo<>("failure", null, ex.getMessage());
-			logger.error("loadDayUseTime error" + ex.getMessage());
-		} finally {
-			DruidUtil.close(readConnection);
-		}
-		return ri;
-	}
 }

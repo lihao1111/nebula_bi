@@ -130,21 +130,5 @@ public class UseTimeController {
 	}
 
 
-	@RequestMapping("/loadDayUseTime")
-	public IResultInfo<Map<String, Object>> loadDayUseTime(HttpServletRequest request, HttpServletResponse responseString) {
-		IResultInfo<Map<String, Object>> ri = null;
-		logger.info("loadDayUseTime");
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		UseTimeService useTimeService = UseTimeService.getInstance();
-		try {
-			Date day = dateFormat.parse(request.getParameter("nowDate"));
-			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
-
-			ri = useTimeService.loadDayUseTime(platFormId, day);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return ri;
-	}
 
 }
