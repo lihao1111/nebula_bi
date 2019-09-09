@@ -82,4 +82,24 @@ public class OnlinePVUVController {
 		}
 		return ri;
 	}
+
+	@RequestMapping("/loadDayPVUV")
+	public IResultInfo<Map<String, Object>> loadDayPVUV(HttpServletRequest request, HttpServletResponse response) {
+		IResultInfo<Map<String, Object>> ri = null;
+		logger.info("loadDayPVUV");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		OnlinePVUVService onlinePVUVService = OnlinePVUVService.getInstance();
+		Date nowDate;
+		try {
+			nowDate = dateFormat.parse(request.getParameter("nowDate"));
+			Integer lPlatform = Integer.parseInt(request.getParameter("platFormId"));
+
+			ri = onlinePVUVService.getNowPVUV(lPlatform, nowDate);
+
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return ri;
+	}
 }

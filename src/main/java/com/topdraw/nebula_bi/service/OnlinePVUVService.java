@@ -83,4 +83,28 @@ public class OnlinePVUVService {
 		}
 		return ri;
 	}
+
+	public IResultInfo<Map<String, Object>> getNowPVUV(Integer lPlatform, Date compareDate) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String querySql = "SELECT a.* FROM bi_online_pvuv a WHERE platform_id =? AND day = ? order by hour";
+			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(compareDate));
+
+			ri = new ResultInfo<>("success", retlist, retlist.size(), null);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			ri = new ResultInfo<>("failure", null, e.getMessage());
+			logger.error("getNowPVUV error" + e.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+
+		return ri;
+	}
+
 }
