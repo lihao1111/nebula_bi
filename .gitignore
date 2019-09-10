@@ -20,6 +20,8 @@ target/
 *.ipr
 
 ### NetBeans ###
+src/main/resources/static
+src/main/resources/META-INF
 target/
 springboot_nebulaBi/
 /nbproject/private/
