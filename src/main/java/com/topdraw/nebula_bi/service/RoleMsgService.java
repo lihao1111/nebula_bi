@@ -105,15 +105,18 @@ public class RoleMsgService {
 			mapRole.put("description", roleDescription);
 			DruidUtil.save(writeConnection, mapRole, "x_role");
 			//添加角色权限
-			Map<String, Object> map = DruidUtil.queryUniqueResult(writeConnection, "SELECT * FROM x_role WHERE name = ?", roleName);
-			Integer roleId = Integer.parseInt(map.get("id").toString());
-			String[] chooseKeyArr = chooseKeys.split(",");
-			for (int i = 0; i < chooseKeyArr.length; i++) {
-				Map<String, Object> mapSave = new HashMap<>();
-				mapSave.put("role_id", roleId);
-				mapSave.put("backoffice_feature_id", chooseKeyArr[i]);
-				DruidUtil.save(writeConnection, mapSave, "x_role__backoffice_feature");
+			if(StringUtil.hasText(chooseKeys)){
+				Map<String, Object> map = DruidUtil.queryUniqueResult(writeConnection, "SELECT * FROM x_role WHERE name = ?", roleName);
+				Integer roleId = Integer.parseInt(map.get("id").toString());
+				String[] chooseKeyArr = chooseKeys.split(",");
+				for (int i = 0; i < chooseKeyArr.length; i++) {
+					Map<String, Object> mapSave = new HashMap<>();
+					mapSave.put("role_id", roleId);
+					mapSave.put("backoffice_feature_id", chooseKeyArr[i]);
+					DruidUtil.save(writeConnection, mapSave, "x_role__backoffice_feature");
+				}
 			}
+
 			DruidUtil.commitTransaction(writeConnection);
 
 			ri = new ResultInfo<>("success", null, "成功创建角色");
