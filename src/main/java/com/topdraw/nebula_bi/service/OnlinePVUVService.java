@@ -107,4 +107,25 @@ public class OnlinePVUVService {
 		return ri;
 	}
 
+	public IResultInfo<Map<String, Object>> getCurPV(Integer lPlatform, Date sdate) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String querySql = "SELECT *  FROM bi_online_pvuv_sum  WHERE platform_id =? AND day = ? ORDER BY hour DESC";
+			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sdate));
+
+			ri = new ResultInfo<>("success", retlist, retlist.size(), null);
+		} catch (SQLException e) {
+			logger.error("getCurPV error" + e.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+		return ri;
+	}
+
+
 }

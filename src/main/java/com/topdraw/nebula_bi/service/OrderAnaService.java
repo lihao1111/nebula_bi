@@ -287,4 +287,31 @@ public class OrderAnaService {
 		return ri;
 	}
 
+
+	public IResultInfo<Map<String, Object>> getOrderTrig(Integer lPlatform, Date startDate, Date endDate) {
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String querySql = "SELECT bss.media_id, m.name, sum(bss.subing_num) subing_num FROM bi_subscribing_statistic bss " +
+					"INNER JOIN z_media_local zm ON bss.media_id = zm.local_id AND bss.platform_id = zm.platform_id " +
+					"INNER JOIN x_media m ON zm.entity_code = m.code " +
+					"WHERE bss.platform_id = ? AND day >= ? AND day <= ? GROUP BY bss.media_id ORDER BY subing_num desc";
+
+			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, lPlatform, DateUtil.formatDate(startDate, ""), DateUtil.formatDate(endDate, ""));
+
+			ri = new ResultInfo<>(ResultInfo.BUSINESS_SUCCESS, retList, retList.size(), "");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("getOrderTrig error" + e.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+		return ri;
+	}
+
+
 }

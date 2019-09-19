@@ -1,10 +1,7 @@
 package com.topdraw.nebula_bi.service;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import org.afflatus.infrastructure.common.IResultInfo;
 import org.afflatus.infrastructure.common.ResultInfo;
-import org.afflatus.utility.CollectionUtil;
 import org.afflatus.utility.DruidUtil;
 import org.afflatus.utility.StringUtil;
 import org.slf4j.Logger;
@@ -12,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class UserMsgService {
@@ -51,13 +47,28 @@ public class UserMsgService {
 	public IResultInfo<Map<String, Object>> saveUser(String flag, Map<String, Object> mapSave) {
 		IResultInfo<Map<String, Object>> ri;
 		Connection writeConnection = null;
-
+		Connection readConnection = null;
 		try {
 			writeConnection = DruidUtil.getRandomWriteConnection();
+			readConnection = DruidUtil.getRandomReadConnection();
 
 			DruidUtil.beginTransaction(writeConnection);
 			if("newAdd".equals(flag)){
-				DruidUtil.save(writeConnection, mapSave, "x_admin");
+				Object id = DruidUtil.save(writeConnection, mapSave, "x_admin");
+				//插入授权记录
+
+				List<Map<String, Object>> listBackOfficeFeatures = DruidUtil.queryList(readConnection,
+						"SELECT * FROM x_backoffice_feature");
+
+				for (Map<String, Object> mapBackOfficeFeature : listBackOfficeFeatures) {
+					Map<String, Object> mapAdminBackOfficeFeature = new HashMap<>();
+					mapAdminBackOfficeFeature.put("admin_id", id);
+					mapAdminBackOfficeFeature.put("backoffice_feature_name", mapBackOfficeFeature.get("name"));
+					mapAdminBackOfficeFeature.put("authentication_code", 0);
+
+					DruidUtil.save(writeConnection, mapAdminBackOfficeFeature, "x_admin__backoffice_feature");
+				}
+
 			}else {
 				DruidUtil.update(writeConnection, mapSave, "x_admin", "id");
 			}
