@@ -90,6 +90,28 @@ public class OrderAnaController {
 		return ri;
 	}
 
+	@RequestMapping("/loadOrderEnter")
+	@NeedAuthentication(friendlyName = "订购到达统计", description = "订购到达统计", servletName = "订购分析")
+	@NeedAudit(auditFlag = true, auditDesc = "订购到达统计")
+	public IResultInfo<Map<String, Object>> loadOrderEnter(HttpServletRequest request, HttpServletResponse response) {
+		IResultInfo<Map<String, Object>> ri = null;
+		logger.info("loadOrderEnter");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		OrderAnaService orderAnaService = OrderAnaService.getInstance();
+		Date sDate;
+		Date eDate;
+		try {
+			sDate = dateFormat.parse(request.getParameter("startDate"));
+			eDate = dateFormat.parse(request.getParameter("endDate"));
+			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+
+			ri = orderAnaService.getOrderEnter(platFormId, sDate, eDate);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return ri;
+	}
 
 
 }

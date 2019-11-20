@@ -314,4 +314,25 @@ public class OrderAnaService {
 	}
 
 
+	public IResultInfo<Map<String, Object>> getOrderEnter(Integer lPlatform, Date startDate, Date endDate) {
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String querySql = "SELECT * FROM bi_orderpage_uv WHERE platform_id = ? AND day >= ? AND day <= ? ORDER BY day desc";
+
+			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, lPlatform, DateUtil.formatDate(startDate, ""), DateUtil.formatDate(endDate, ""));
+
+			ri = new ResultInfo<>(ResultInfo.BUSINESS_SUCCESS, retList, retList.size(), "");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("getOrderEnter error" + e.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+		return ri;
+	}
+
 }

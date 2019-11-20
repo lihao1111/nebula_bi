@@ -1,6 +1,5 @@
 package com.topdraw.nebula_bi.controller;
 
-import com.topdraw.nebula_bi.service.ActiveUserService;
 import com.topdraw.nebula_bi.service.LoginUserService;
 import org.afflatus.infrastructure.common.IResultInfo;
 import org.afflatus.infrastructure.common.NeedAudit;
@@ -18,27 +17,26 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
-public class ActiveUserController {
-	private final static Logger logger = LoggerFactory.getLogger(ActiveUserController.class);
+public class LoginUserController {
+	private final static Logger logger = LoggerFactory.getLogger(LoginUserController.class);
 
-	@RequestMapping("/loadActiveUser")
-	@NeedAuthentication(friendlyName = "用户活跃", description = "用户活跃", servletName = "用户分析")
-	@NeedAudit(auditFlag = true, auditDesc = "用户活跃")
-	public IResultInfo<Map<String, Object>> loadActiveUser(HttpServletRequest request, HttpServletResponse response) {
+	@RequestMapping("/loadLoginUser")
+	@NeedAuthentication(friendlyName = "用户登录", description = "用户登录", servletName = "用户分析")
+	@NeedAudit(auditFlag = true, auditDesc = "用户登录")
+	public IResultInfo<Map<String, Object>> loadLoginUser(HttpServletRequest request, HttpServletResponse response) {
 		IResultInfo<Map<String, Object>> ri = null;
-		logger.info("loadActiveUser");
+		logger.info("loadLoginUser");
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-		ActiveUserService activeUserService = ActiveUserService.getInstance();
+		LoginUserService loginUserService = LoginUserService.getInstance();
 		Date sDate;
 		Date eDate;
 		try {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
-			String type = request.getParameter("type");
 
-			ri = activeUserService.getActiveUser(platFormId, type, sDate, eDate);
+			ri = loginUserService.getLoginUser(platFormId, sDate, eDate);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
