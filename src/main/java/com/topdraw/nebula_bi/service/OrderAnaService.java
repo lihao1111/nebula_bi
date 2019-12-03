@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -314,15 +315,24 @@ public class OrderAnaService {
 	}
 
 
-	public IResultInfo<Map<String, Object>> getOrderEnter(Integer lPlatform, Date startDate, Date endDate) {
+	public IResultInfo<Map<String, Object>> getOrderEnter(Integer lPlatform, Date sDate, Date eDate, String type) {
 		IResultInfo<Map<String, Object>> ri = null;
 		Connection readConnection = null;
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String querySql = "SELECT * FROM bi_orderpage_uv WHERE platform_id = ? AND day >= ? AND day <= ? ORDER BY day desc";
-
-			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, lPlatform, DateUtil.formatDate(startDate, ""), DateUtil.formatDate(endDate, ""));
+			List<Map<String, Object>> retList = null;
+			switch (type){
+				case "day" :
+					retList = getOrderUVForDay(readConnection, lPlatform, sDate, eDate);
+					break;
+				case "week" :
+					retList = getOrderUVForWeek(readConnection, lPlatform, sDate, eDate);
+					break;
+				case "month" :
+					retList = getOrderUVForMonth(readConnection, lPlatform, sDate, eDate);
+					break;
+			}
 
 			ri = new ResultInfo<>(ResultInfo.BUSINESS_SUCCESS, retList, retList.size(), "");
 
@@ -334,5 +344,35 @@ public class OrderAnaService {
 		}
 		return ri;
 	}
+
+	private List<Map<String, Object>> getOrderUVForDay(Connection readConnection, Integer lPlatform, Date sDate, Date eDate) throws SQLException {
+		String querySql = "SELECT * FROM bi_orderpage_uv WHERE platform_id = ? AND day >= ? AND day <= ? ORDER BY day desc";
+
+		return DruidUtil.queryList(readConnection, querySql, lPlatform, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""));
+
+	}
+
+	private List<Map<String, Object>> getOrderUVForWeek(Connection readConnection, Integer lPlatform, Date sDate, Date eDate) throws SQLException {
+		List<String> days = com.topdraw.nebula_bi.util.DateUtil.getWeek(sDate, eDate);
+		String params = "";
+		for(String day : days){
+			params += "'" + day+"',";
+		}
+		params = params.substring(0, params.length()-1);
+		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		return DruidUtil.queryList(readConnection, querySql, lPlatform);
+	}
+
+	private List<Map<String, Object>> getOrderUVForMonth(Connection readConnection, Integer lPlatform, Date sDate, Date eDate) throws SQLException {
+		List<String> days = com.topdraw.nebula_bi.util.DateUtil.getMonth(sDate, eDate);
+		String params = "";
+		for(String day : days){
+			params += "'" + day+"',";
+		}
+		params = params.substring(0, params.length()-1);
+		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		return DruidUtil.queryList(readConnection, querySql, lPlatform);
+	}
+
 
 }

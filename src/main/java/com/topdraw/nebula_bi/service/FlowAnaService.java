@@ -34,8 +34,8 @@ public class FlowAnaService {
 			String querySql = "SELECT * FROM "+tabName+" a WHERE platform_id = ? AND day = ? AND linkLNode <> linkENode";
 			List<Map<String, Object>> dataList = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate));
 
-			querySql = "SELECT * FROM bi_ui_deep";
-			List<Map<String, Object>> deepDefList = DruidUtil.queryList(readConnection, querySql);
+			querySql = "SELECT * FROM bi_ui_deep WHERE platform_id = ?";
+			List<Map<String, Object>> deepDefList = DruidUtil.queryList(readConnection, querySql, lPlatform);
 
 			List<Map<String, Object>> retList = new ArrayList<>();
 			//过滤数据

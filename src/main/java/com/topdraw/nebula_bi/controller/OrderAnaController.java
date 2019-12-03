@@ -105,8 +105,9 @@ public class OrderAnaController {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String type = request.getParameter("type");
 
-			ri = orderAnaService.getOrderEnter(platFormId, sDate, eDate);
+			ri = orderAnaService.getOrderEnter(platFormId, sDate, eDate, type);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
