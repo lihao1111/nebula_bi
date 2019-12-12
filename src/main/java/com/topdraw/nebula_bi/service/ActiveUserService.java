@@ -54,7 +54,7 @@ public class ActiveUserService {
 		try {
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-			String querySql = "SELECT a.day, a.uv FROM bi_gscmcc_children_newuser a WHERE day >= ? AND day <= ? AND platform_id = ? ORDER BY day desc";
+			String querySql = "SELECT a.day, a.uv FROM bi_daily_user a WHERE day >= ? AND day <= ? AND platform_id = ? ORDER BY day desc";
 
 			return DruidUtil.queryList(readConnection, querySql, dateFormat.format(sDate), dateFormat.format(eDate), lPlatform);
 		} catch (SQLException e) {

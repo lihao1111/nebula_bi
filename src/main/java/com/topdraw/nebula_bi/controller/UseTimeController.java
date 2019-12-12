@@ -1,5 +1,6 @@
 package com.topdraw.nebula_bi.controller;
 
+import com.topdraw.nebula_bi.service.HBMusicHelpService;
 import com.topdraw.nebula_bi.service.UseTimeService;
 import org.afflatus.infrastructure.common.IResultInfo;
 import org.afflatus.infrastructure.common.NeedAudit;
@@ -69,8 +70,8 @@ public class UseTimeController {
 	}
 
 	@RequestMapping("/loadPlayCount")
-	@NeedAuthentication(friendlyName = "播放次数统计", description = "播放次数统计", servletName = "内容分析")
-	@NeedAudit(auditFlag = true, auditDesc = "播放次数统计")
+	@NeedAuthentication(friendlyName = "有效播放次数统计", description = "有效播放次数统计", servletName = "内容分析")
+	@NeedAudit(auditFlag = true, auditDesc = "有效播放次数统计")
 	public IResultInfo<Map<String, Object>> loadPlayCount(HttpServletRequest request, HttpServletResponse responseString) {
 		IResultInfo<Map<String, Object>> ri = null;
 		logger.info("loadPlayCount");
@@ -145,6 +146,53 @@ public class UseTimeController {
 			e.printStackTrace();
 		}
 		return ri;
+	}
+
+	@RequestMapping("/loadAllPlayCount")
+	/*@NeedAuthentication(friendlyName = "播放次数统计", description = "播放次数统计", servletName = "内容分析")
+	@NeedAudit(auditFlag = true, auditDesc = "播放次数统计")*/
+	public IResultInfo<Map<String, Object>> loadAllPlayCount(HttpServletRequest request, HttpServletResponse responseString) {
+		IResultInfo<Map<String, Object>> ri = null;
+		logger.info("loadAllPlayCount");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		UseTimeService useTimeService = UseTimeService.getInstance();
+		Date sDate;
+		Date eDate;
+		try {
+			sDate = dateFormat.parse(request.getParameter("startDate"));
+			eDate = dateFormat.parse(request.getParameter("endDate"));
+			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String contentKey = request.getParameter("contentKey");
+
+			ri = useTimeService.fetchAllPlayCount(platFormId, sDate, eDate, contentKey);
+
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return ri;
+	}
+
+	@RequestMapping("/exportAllPlayCount")
+	public void exportAllPlayCount(HttpServletRequest request, HttpServletResponse response) {
+		logger.info("exportAllPlayCount");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		UseTimeService useTimeService = UseTimeService.getInstance();
+		Date sDate;
+		Date eDate;
+		try {
+			sDate = dateFormat.parse(request.getParameter("startDate"));
+			eDate = dateFormat.parse(request.getParameter("endDate"));
+			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String contentKey = request.getParameter("contentKey");
+
+			useTimeService.exportAllPlayCount(response, platFormId, sDate, eDate, contentKey);
+
+
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

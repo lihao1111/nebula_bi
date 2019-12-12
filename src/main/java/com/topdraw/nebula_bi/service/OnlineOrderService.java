@@ -41,7 +41,7 @@ public class OnlineOrderService {
 			Date dateLast7 = calendar.getTime();
 			String dateLast7Str = dateFormat.format(dateLast7);
 
-			String tabName = "bi_gscmcc_children_onlineorder";
+			String tabName = "bi_online_order";
 
 			String querySql = "SELECT * FROM "+tabName+" a WHERE platform_id =? AND day in (?,?,?) group by day, hour order by day desc, hour";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sdate), dateLastStr, dateLast7Str);
@@ -63,7 +63,7 @@ public class OnlineOrderService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_onlineorder";
+			String tabName = "bi_online_order";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day = ? AND platform_id = ? group by hour order by hour";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, dateFormat.format(compareDate), lPlatform);
 
@@ -85,7 +85,7 @@ public class OnlineOrderService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_onlineorder";
+			String tabName = "bi_online_order";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day = ? AND platform_id = ? order by hour desc";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, dateFormat.format(nowDate), lPlatform);
 
@@ -113,7 +113,7 @@ public class OnlineOrderService {
 			Date date = calendar.getTime();
 			String dayStr = dateFormat.format(date);		//昨天
 
-			String tabName = "bi_gscmcc_children_onlineorder";
+			String tabName = "bi_online_order";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day = ? AND platform_id = ? ORDER BY hour DESC";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, dayStr, lPlatform);
 

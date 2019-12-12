@@ -1,5 +1,6 @@
 package com.topdraw.nebula_bi.service;
 
+import com.topdraw.nebula_bi.util.ExcelUtilsNew;
 import org.afflatus.infrastructure.common.IResultInfo;
 import org.afflatus.infrastructure.common.ResultInfo;
 import org.afflatus.utility.DateUtil;
@@ -8,8 +9,10 @@ import org.afflatus.utility.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletResponse;
 import java.sql.Connection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +31,7 @@ public class UseTimeService {
         try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_usetime";
+			String tabName = "bi_usetime";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
 
 			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
@@ -50,7 +53,7 @@ public class UseTimeService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_validatetime";
+			String tabName = "bi_validatetime";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
 
 			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
@@ -151,7 +154,7 @@ public class UseTimeService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_usetime";
+			String tabName = "bi_usetime";
 			String querySql = "SELECT * FROM "+tabName+" a WHERE day = ? AND platform_id = ?";
 
 			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(day, -1), ""), lPlatform);
@@ -166,4 +169,79 @@ public class UseTimeService {
 		}
 		return ri;
 	}
+
+	public IResultInfo<Map<String, Object>> fetchAllPlayCount(Integer lPlatform, Date sDate, Date eDate, String contentKey) {
+		IResultInfo<Map<String, Object>> ri;
+		Connection readConnection = null;
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String strWhere = " WHERE biv.day >='"+DateUtil.formatDate(sDate, "")+"' AND biv.day <= '"+DateUtil.formatDate(eDate, "")+"' AND biv.platform_id = "+lPlatform+" ";
+			if(StringUtil.hasText(contentKey)){
+				strWhere += " AND m.name like '%" +contentKey+ "%'";
+			}
+			System.out.println(System.currentTimeMillis());
+			String querySql = "SELECT biv.*, m.`name` media_name, cp.`name` cp_name, m.type media_type FROM bi_playcount_day biv " +
+					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
+					"INNER JOIN x_media m ON zm.entity_code = m.code " +
+					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " + strWhere + " ORDER BY biv.play_count DESC";
+
+			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql);
+			System.out.println(System.currentTimeMillis());
+			ri = new ResultInfo<>("success", listControl, listControl.size(), "");
+
+		} catch (Exception ex) {
+			ri = new ResultInfo<>("failure", null, ex.getMessage());
+			ex.printStackTrace();
+			logger.error("fetchAllPlayCount error" + ex.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+		return ri;
+	}
+
+
+	public void exportAllPlayCount(HttpServletResponse response, Integer lPlatform, Date sDate, Date eDate, String contentKey) {
+		Connection readConnection = null;
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String strWhere = " WHERE biv.day >='"+DateUtil.formatDate(sDate, "")+"' AND biv.day <= '"+DateUtil.formatDate(eDate, "")+"' AND biv.platform_id = "+lPlatform+" ";
+			if(StringUtil.hasText(contentKey)){
+				strWhere += " AND m.name like '%" +contentKey+ "%'";
+			}
+			System.out.println(System.currentTimeMillis());
+			String querySql = "SELECT biv.*, m.`name` media_name, cp.`name` cp_name, m.type media_type, bmp.per_20, bmp.per20_50, bmp.per50_80, bmp.per_80 FROM bi_playcount_day biv " +
+					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
+					"INNER JOIN x_media m ON zm.entity_code = m.code " +
+					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " +
+					"INNER JOIN bi_media_per bmp ON biv.day = bmp.day AND biv.media_id = biv.media_id"+ strWhere + " ORDER BY biv.validCount DESC";
+			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql);
+
+			Map<String, Object> mapColumn = new LinkedHashMap<>();
+			mapColumn.put("media_id", "内容ID");
+			mapColumn.put("media_name", "内容名称");
+			mapColumn.put("cp_name", "供应商");
+			mapColumn.put("media_type", "内容类型");
+			mapColumn.put("media_name", "内容名称");
+			mapColumn.put("play_count", "完整播放次数");
+			mapColumn.put("per_20", "20%以下");
+			mapColumn.put("per_20_50", "20%-50%");
+			mapColumn.put("per_50_80", "50%-80%");
+			mapColumn.put("per_80", "80%以上");
+
+			//导出数据
+			ExcelUtilsNew.ExcelExportOutPut(response, listControl, mapColumn, "");
+
+		} catch (Exception ex) {
+
+			ex.printStackTrace();
+			logger.error("fetchAllPlayCount error" + ex.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+	}
+
+
+
 }

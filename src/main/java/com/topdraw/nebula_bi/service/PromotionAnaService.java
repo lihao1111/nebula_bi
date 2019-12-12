@@ -55,7 +55,7 @@ public class PromotionAnaService {
 			if(pageId != 0){
 				sqlWhere += " AND p.id = "+ pageId;
 			}
-			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, p.name, xp.title, xpg.description FROM bi_gscmcc_children_promotion bgc "+
+			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, p.name, xp.title, xpg.description FROM bi_pvuv_promotion bgc "+
 					"INNER JOIN x_promotion_item xp ON bgc.promotion_code = xp.`code` " +
 					"INNER JOIN x_promotion xpg ON xp.promotion_id = xpg.id " +
 					"INNER JOIN x_page_promotion pp ON bgc.promotion_code = pp.promotion_code " +

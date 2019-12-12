@@ -256,7 +256,7 @@ public class ExcelUtils {
 			String startDay = "2019-09-16";
 			String endDay = "2019-09-22";
 
-			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, xp.title FROM bi_gscmcc_children_promotion bgc "+
+			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, xp.title FROM bi_pvuv_promotion bgc "+
 					"INNER JOIN x_promotion_item xp ON bgc.promotion_code = xp.`code`" +
 					"WHERE bgc.day >= ? AND bgc.day <= ? AND bgc.platform_id = ?  GROUP BY bgc.day, xp.title ORDER BY xp.title, bgc.day";
 
@@ -264,7 +264,7 @@ public class ExcelUtils {
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, startDay, endDay, 14);
 
 			//
-			querySql = "SELECT MAX(a.val) as maxlen FROM (SELECT count(*) as val FROM bi_gscmcc_children_promotion bgc " +
+			querySql = "SELECT MAX(a.val) as maxlen FROM (SELECT count(*) as val FROM bi_pvuv_promotion bgc " +
 			 "WHERE bgc.day >= ? AND bgc.day <= ? AND bgc.platform_id = ?  GROUP BY bgc.day) AS a";
 
 			Map<String, Object> lengthMap = DruidUtil.queryUniqueResult(readConnection, querySql, startDay, endDay, 14);
@@ -470,7 +470,7 @@ public class ExcelUtils {
 			List<Map<String, Object>> retList_Auth = DruidUtil.queryList(readConnection, querySql, startDay, endDay);		//包月用户信息
 
 			querySql = "SELECT day, sum(ordered_num) allOrder, sum(newUordered_num) allNewOrder, sum(oldNewReUordered_num)+sum(oldFirstUordered_num) allOldOrder " +
-					"FROM bi_gscmcc_children_proordered_copy1 WHERE day >= ? AND day <= ? AND platform_id = ? group by day";
+					"FROM bi_pro_ordered WHERE day >= ? AND day <= ? AND platform_id = ? group by day";
 			List<Map<String, Object>> retList_Order = DruidUtil.queryList(readConnection, querySql, startDay, endDay, 14);		//订购信息
 
 			querySql = "SELECT * FROM x_hb_play_rf WHERE day >= ? AND day <= ?";

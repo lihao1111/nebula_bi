@@ -32,7 +32,7 @@ public class SubjectAnaService {
 			String querySql = "";
 			if("day".equals(chooseType)){		//按日
 				querySql = "SELECT ss.code, ss.name, bss.day, bss.pv, bss.uv FROM x_special_subject ss  inner join " +
-						"bi_gscmcc_children_subject bss on ss.code = bss.subject_code WHERE bss.day >= ? AND bss.day <= ? AND bss.platform_id = ? " +
+						"bi_pvuv_subject bss on ss.code = bss.subject_code WHERE bss.day >= ? AND bss.day <= ? AND bss.platform_id = ? " +
 						"ORDER by day desc, bss.pv desc";
 			}
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, dateFormat.format(sDate), dateFormat.format(eDate), platFormId);

@@ -30,7 +30,7 @@ public class NewAddUserService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_newuser";
+			String tabName = "bi_daily_user";
 			String querySql = "SELECT a.*, ROUND(a.retained1Num * 100/a.newAddNum, 1) retained1Prec FROM "+tabName+" a WHERE platform_id =? AND day >= ? AND day <= ? ORDER BY day desc";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate), dateFormat.format(eDate));
 
@@ -62,7 +62,7 @@ public class NewAddUserService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_gscmcc_children_newuser";
+			String tabName = "bi_daily_user";
 			String querySql = "SELECT a.* FROM "+tabName+" a WHERE platform_id =? AND day >= ? AND day <= ? ORDER BY day";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate), dateFormat.format(eDate));
 

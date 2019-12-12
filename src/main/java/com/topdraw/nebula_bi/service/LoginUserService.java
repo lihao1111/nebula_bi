@@ -30,7 +30,7 @@ public class LoginUserService {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 
-			String tabName = "bi_gscmcc_children_loginuser";
+			String tabName = "bi_loginuser";
 			String querySql = "SELECT a.*, CONVERT((a.login_new * 100 / a.login_uv), DECIMAL(18,2)) loginNewPrec, CONVERT((a.login_old  * 100 / a.login_uv), DECIMAL(18,2)) loginOldPrec "+
 					" FROM "+tabName+" a WHERE day >= ? AND day <= ? AND platform_id = ? ORDER BY day desc";
 

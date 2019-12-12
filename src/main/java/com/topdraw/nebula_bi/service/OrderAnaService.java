@@ -43,7 +43,7 @@ public class OrderAnaService {
 			if("day".equals(chooseType)){	//日统计
 				/*retlistProducts = this.getDatasForDay(readConnection, listDays, listProducts, lPlatform);*/
 
-				String querySql = "SELECT * FROM  x_order_product_xx p left join bi_gscmcc_children_proordered_copy1 bp ON p.product_id = bp.productId " +
+				String querySql = "SELECT * FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId " +
 						" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ?";
 
 				retlistProducts = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(startDate), dateFormat.format(endDate));
@@ -84,8 +84,8 @@ public class OrderAnaService {
 		DecimalFormat df = new DecimalFormat("0.000");
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		//获取每日的uv newadd
-		String tabName_newUser = "bi_gscmcc_children_newuser";
-		String tabName_newOrder = "bi_gscmcc_children_proordered";
+		String tabName_newUser = "bi_daily_user";
+		String tabName_newOrder = "bi_pro_ordered";
 
 		Map<String, Object> UVMap = new HashMap<String, Object>();		//存放map
 		for (Date day : listDays) {//时间循环 n天
@@ -266,7 +266,7 @@ public class OrderAnaService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String querySql = "SELECT * FROM bi_gscmcc_children_orderPerUi bil " +
+			String querySql = "SELECT * FROM bi_orderPerUi bil " +
 					"LEFT JOIN bi_ui_deep bid ON bil.ui = bid.ui_name WHERE " +
 					"bil.platform_id = ? AND day >= ? AND day <= ? ORDER BY bil.day desc, bil.orderingPerUi_nums desc ";
 /*

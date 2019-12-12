@@ -35,7 +35,7 @@ public class HBMusicHelpService {
 
 
 
-			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, xp.title FROM bi_gscmcc_children_promotion bgc "+
+			String querySql = "SELECT bgc.day, bgc.pv, bgc.uv, xp.title FROM bi_pvuv_promotion bgc "+
 					"INNER JOIN x_promotion_item xp ON bgc.promotion_code = xp.`code` " +
 					"INNER JOIN x_promotion xpg ON xp.promotion_id = xpg.id " +
 					"WHERE bgc.day >= ? AND bgc.day <= ? AND bgc.platform_id = ?  ORDER BY bgc.day";
@@ -83,7 +83,7 @@ public class HBMusicHelpService {
 			List<Map<String, Object>> retList_Auth = DruidUtil.queryList(readConnection, querySql, startDay, endDay);        //包月用户信息
 
 			querySql = "SELECT day, sum(ordered_num) allOrder, sum(newUordered_num) allNewOrder, sum(oldNewReUordered_num)+sum(oldFirstUordered_num) allOldOrder " +
-					"FROM bi_gscmcc_children_proordered_copy1 WHERE day >= ? AND day <= ? AND platform_id = ? group by day";
+					"FROM bi_pro_ordered WHERE day >= ? AND day <= ? AND platform_id = ? group by day";
 			List<Map<String, Object>> retList_Order = DruidUtil.queryList(readConnection, querySql, startDay, endDay, platFormId);        //订购信息
 
 			querySql = "SELECT * FROM x_hb_play_rf WHERE day >= ? AND day <= ?";
