@@ -8,6 +8,7 @@ import org.afflatus.utility.DruidUtil;
 import org.afflatus.utility.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.unit.DataUnit;
 
 import javax.servlet.http.HttpServletResponse;
 import java.sql.Connection;
@@ -210,31 +211,30 @@ public class UseTimeService {
 			if(StringUtil.hasText(contentKey)){
 				strWhere += " AND m.name like '%" +contentKey+ "%'";
 			}
-			System.out.println(System.currentTimeMillis());
-			String querySql = "SELECT biv.*, m.`name` media_name, cp.`name` cp_name, m.type media_type, bmp.per_20, bmp.per20_50, bmp.per50_80, bmp.per_80 FROM bi_playcount_day biv " +
+
+			String querySql = "SELECT biv.day day, biv.media_id media_id, biv.play_count, m.`name` media_name, cp.`name` cp_name, bmp.per_20, bmp.per_20_50, bmp.per_50_80, bmp.per_80 " +
+					"FROM bi_playcount_day biv " +
 					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
 					"INNER JOIN x_media m ON zm.entity_code = m.code " +
 					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " +
-					"INNER JOIN bi_media_per bmp ON biv.day = bmp.day AND biv.media_id = biv.media_id"+ strWhere + " ORDER BY biv.validCount DESC";
+					"INNER JOIN bi_media_per bmp ON biv.day = bmp.day AND biv.media_id = bmp.media_id "+ strWhere + " ORDER BY biv.play_count DESC";
 			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql);
 
 			Map<String, Object> mapColumn = new LinkedHashMap<>();
+			mapColumn.put("day", "日期");
 			mapColumn.put("media_id", "内容ID");
 			mapColumn.put("media_name", "内容名称");
 			mapColumn.put("cp_name", "供应商");
-			mapColumn.put("media_type", "内容类型");
-			mapColumn.put("media_name", "内容名称");
 			mapColumn.put("play_count", "完整播放次数");
 			mapColumn.put("per_20", "20%以下");
-			mapColumn.put("per_20_50", "20%-50%");
-			mapColumn.put("per_50_80", "50%-80%");
+			mapColumn.put("per_20_50", "20%_50%");
+			mapColumn.put("per_50_80", "50%_80%");
 			mapColumn.put("per_80", "80%以上");
 
 			//导出数据
-			ExcelUtilsNew.ExcelExportOutPut(response, listControl, mapColumn, "");
+			ExcelUtilsNew.ExcelExportOutPut(response, listControl, mapColumn, "playCount_"+ DateUtil.formatDate(new Date(), ""));
 
 		} catch (Exception ex) {
-
 			ex.printStackTrace();
 			logger.error("fetchAllPlayCount error" + ex.getMessage());
 		} finally {

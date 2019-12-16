@@ -633,9 +633,11 @@ public class ExcelUtilsNew {
 		byte[] content = os.toByteArray();
 		// 4. 将数组放入输入流中
 		InputStream is = new ByteArrayInputStream(content);
+		ByteArrayInputStream tempIn = new ByteArrayInputStream(os.toByteArray());
 		// 5. 设置response参数
 		response.reset(); // 重置response的设置
 		response.setContentType("application/vnd.ms-excel;charset=utf-8");
+		response.setHeader("Content-Length", String.valueOf(tempIn.available()));
 		response.setHeader("Content-Disposition", "attachment;filename=" + new String((fileName + ".xlsx").getBytes(), "iso-8859-1"));
 		// 6. 创建Servlet 输出流对象
 		ServletOutputStream out = response.getOutputStream();
@@ -652,6 +654,7 @@ public class ExcelUtilsNew {
 				bos.write(buff, 0, bytesRead);
 			}
 		} catch (final IOException e) {
+			e.printStackTrace();
 			throw e;
 		} finally {
 			if (bis != null)
@@ -664,6 +667,8 @@ public class ExcelUtilsNew {
 				os.close();
 			if (is != null)
 				is.close();
+			if(workbook != null)
+				workbook.close();
 		}
 	}
 
@@ -679,6 +684,7 @@ public class ExcelUtilsNew {
 	public static void ExcelExportOutPut(HttpServletResponse response, List<Map<String, Object>> listData, Map<String, Object> mapColumn,
 										   String strFileName)
 			throws IOException {
+		//写入到excel
 		// 声明一个工作薄
 		XSSFWorkbook workbook = new XSSFWorkbook();
 		// 生成一个表格
@@ -703,14 +709,14 @@ public class ExcelUtilsNew {
 
 		// 产生表格标题行(动态表头)
 		XSSFRow row = sheet.createRow(0);
-		row.setHeightInPoints(20);
+		//row.setHeightInPoints(20);
 
 		//表头数据
 		int iHead = 0;
 		for (Map.Entry<String, Object> entry : mapColumn.entrySet()) {
 			XSSFCell cell = row.createCell(iHead);
 			iHead++;
-			HSSFRichTextString text = new HSSFRichTextString(entry.getValue().toString());
+			XSSFRichTextString text = new XSSFRichTextString(entry.getValue().toString());
 			cell.setCellValue(text);
 		}
 
@@ -722,7 +728,7 @@ public class ExcelUtilsNew {
 				XSSFCell cell = row.createCell(j);
 				j++;
 				if (listData.get(i - 1).containsKey(entry.getKey())) {
-					HSSFRichTextString text = new HSSFRichTextString(listData.get(i - 1).get(entry.getKey()) == null ?
+					XSSFRichTextString text = new XSSFRichTextString(listData.get(i - 1).get(entry.getKey()) == null ?
 							"" : listData.get(i - 1).get(entry.getKey()).toString());
 					cell.setCellValue(text);
 				} else {
@@ -733,11 +739,21 @@ public class ExcelUtilsNew {
 
 		String fileExcelName;
 		if (strFileName.equals("")) {
-			fileExcelName = DateUtil.formatDate(new Date(), "yyyyMMddHHmmss") + ".xls";
+			fileExcelName = DateUtil.formatDate(new Date(), "yyyyMMddHHmmss") + ".xlsx";
 		} else {
-			fileExcelName = strFileName + ".xls";
+			fileExcelName = strFileName + ".xlsx";
 		}
 		//导出流对象
-		downloadWorkBook(workbook, fileExcelName, response);
+		response.reset(); // 重置response的设置
+		response.setContentType("application/vnd.ms-excel;charset=utf-8");
+		response.setHeader("Content-Disposition", "attachment;filename=" + new String((fileExcelName + ".xlsx").getBytes(), "iso-8859-1"));
+		response.setContentType("application/vnd.ms-excel;charset=utf-8");
+
+		OutputStream osOut = response.getOutputStream();
+		workbook.write(osOut);
+		osOut.flush();
+
+		osOut.close();
+		workbook.close();
 	}
 }
