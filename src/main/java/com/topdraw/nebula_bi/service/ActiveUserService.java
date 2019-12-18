@@ -104,4 +104,24 @@ public class ActiveUserService {
 		return new ArrayList<>();
 	}
 
+	public IResultInfo<Map<String, Object>> loadDayUV(Integer lPlatform, Date sDate, Date eDate) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String querySql = "SELECT sum(uv) UV FROM bi_daily_user WHERE day >= ? AND day <= ? AND platform_id = ? ORDER BY day desc";
+			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, dateFormat.format(sDate), dateFormat.format(eDate), lPlatform);
+
+			ri = new ResultInfo<>("success", retlist, retlist.size(), null);
+		} catch (SQLException e) {
+			logger.error("loadDayUV error" + e.getMessage());
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+		return ri;
+	}
+
+
 }

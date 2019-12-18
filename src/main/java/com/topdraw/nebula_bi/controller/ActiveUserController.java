@@ -45,4 +45,25 @@ public class ActiveUserController {
 		return ri;
 	}
 
+	@RequestMapping("/loadDayUV")
+	public IResultInfo<Map<String, Object>> loadDayUV(HttpServletRequest request, HttpServletResponse response) {
+		IResultInfo<Map<String, Object>> ri = null;
+		logger.info("loadDayUV");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		ActiveUserService activeUserService = ActiveUserService.getInstance();
+		Date sDate;
+		Date eDate;
+		try {
+			sDate = dateFormat.parse(request.getParameter("startDate"));
+			eDate = dateFormat.parse(request.getParameter("endDate"));
+			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+
+			ri = activeUserService.loadDayUV(platFormId, sDate, eDate);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return ri;
+	}
+
 }

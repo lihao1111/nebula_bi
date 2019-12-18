@@ -88,7 +88,8 @@ public class UseTimeService {
 				strWhere += " AND m.name like '%" +contentKey+ "%'";
 			}
 			System.out.println(System.currentTimeMillis());
-			String querySql = "SELECT biv.*, m.`name` media_name, cp.`name` cp_name, m.type media_type FROM bi_validcount_day biv " +
+			String querySql = "SELECT biv.*, app.name app_name, m.`name` media_name, cp.`name` cp_name, m.type media_type FROM bi_validcount_day biv " +
+					"LEFT JOIN x_app app ON biv.app_id = app.app_id " +
 					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
 					"INNER JOIN x_media m ON zm.entity_code = m.code " +
 					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " + strWhere + " ORDER BY biv.validCount DESC";

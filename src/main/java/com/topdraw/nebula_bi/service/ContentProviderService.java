@@ -147,6 +147,7 @@ public class ContentProviderService {
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, lPlatform);
 
 			querySql = "SELECT 1 FROM bi_media_collect biv " +
+					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
 					"LEFT JOIN x_media m ON biv.media_id = m.id " +
 					"LEFT JOIN x_content_provider cp ON m.content_provider_id = cp.id " + strWhere;
 			List<Map<String, Object>> listTotalCount = DruidUtil.queryList(readConnection, querySql, lPlatform);
