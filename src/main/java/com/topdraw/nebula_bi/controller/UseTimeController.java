@@ -163,9 +163,13 @@ public class UseTimeController {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+
+			String contentType = request.getParameter("contentType");
+			String contentCP = request.getParameter("contentCP");
 			String contentKey = request.getParameter("contentKey");
 
-			ri = useTimeService.fetchAllPlayCount(platFormId, sDate, eDate, contentKey);
+			ri = useTimeService.fetchAllPlayCount(platFormId, sDate, eDate,
+					contentType, contentCP, contentKey);
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -185,9 +189,12 @@ public class UseTimeController {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String contentType = request.getParameter("contentType");
+			String contentCP = request.getParameter("contentCP");
 			String contentKey = request.getParameter("contentKey");
 
-			useTimeService.exportAllPlayCount(response, platFormId, sDate, eDate, contentKey);
+			useTimeService.exportAllPlayCount(response, platFormId, sDate, eDate,
+					contentType, contentCP, contentKey);
 
 
 		} catch (ParseException e) {

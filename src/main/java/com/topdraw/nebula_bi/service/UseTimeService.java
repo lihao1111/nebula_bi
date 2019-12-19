@@ -172,13 +172,21 @@ public class UseTimeService {
 		return ri;
 	}
 
-	public IResultInfo<Map<String, Object>> fetchAllPlayCount(Integer lPlatform, Date sDate, Date eDate, String contentKey) {
+	public IResultInfo<Map<String, Object>> fetchAllPlayCount(Integer lPlatform, Date sDate, Date eDate,
+															  String contentType, String contentCP, String contentKey) {
 		IResultInfo<Map<String, Object>> ri;
 		Connection readConnection = null;
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 			String strWhere = " WHERE biv.day >='"+DateUtil.formatDate(sDate, "")+"' AND biv.day <= '"+DateUtil.formatDate(eDate, "")+"' AND biv.platform_id = "+lPlatform+" ";
+
+			if(StringUtil.hasText(contentType)){
+				strWhere += " AND m.type =" + contentType;
+			}
+			if(StringUtil.hasText(contentCP)){
+				strWhere += " AND cp.id = " + contentCP;
+			}
 			if(StringUtil.hasText(contentKey)){
 				strWhere += " AND m.name like '%" +contentKey+ "%'";
 			}
@@ -203,12 +211,20 @@ public class UseTimeService {
 	}
 
 
-	public void exportAllPlayCount(HttpServletResponse response, Integer lPlatform, Date sDate, Date eDate, String contentKey) {
+	public void exportAllPlayCount(HttpServletResponse response, Integer lPlatform, Date sDate, Date eDate,
+								   String contentType, String contentCP, String contentKey) {
 		Connection readConnection = null;
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 			String strWhere = " WHERE biv.day >='"+DateUtil.formatDate(sDate, "")+"' AND biv.day <= '"+DateUtil.formatDate(eDate, "")+"' AND biv.platform_id = "+lPlatform+" ";
+
+			if(StringUtil.hasText(contentType)){
+				strWhere += " AND m.type =" + contentType;
+			}
+			if(StringUtil.hasText(contentCP)){
+				strWhere += " AND cp.id = " + contentCP;
+			}
 			if(StringUtil.hasText(contentKey)){
 				strWhere += " AND m.name like '%" +contentKey+ "%'";
 			}
