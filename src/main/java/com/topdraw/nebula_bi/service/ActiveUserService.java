@@ -51,13 +51,28 @@ public class ActiveUserService {
 	}
 
 	public static List<Map<String, Object>> getListForDay(Connection readConnection, Integer lPlatform, Date sDate, Date eDate){
+		List<Map<String, Object>> retlist = null;
 		try {
+			retlist = new ArrayList<>();
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			String querySql;
+			while(eDate.getTime() >= sDate.getTime()){
+				querySql = "SELECT bdu.day, bdu.uv, bpv.pv from bi_daily_user bdu INNER JOIN " +
+						"(select day, platform_id, MAX(pv) pv, MAX(uv) FROM bi_online_pvuv_sum " +
+						"WHERE platform_id = ? AND day = ?) bpv " +
+						"ON bdu.`day` = bpv.`day` AND bdu.platform_id = bpv.platform_id " +
+						"WHERE bdu.platform_id = ? AND bdu.`day` = ?";
 
-			String querySql = "SELECT a.day, a.uv FROM bi_daily_user a WHERE day >= ? AND day <= ? AND platform_id = ? ORDER BY day desc";
+				Map<String, Object> retMap = DruidUtil.queryUniqueResult(readConnection, querySql, lPlatform, dateFormat.format(eDate),
+						lPlatform, dateFormat.format(eDate));
+				retlist.add(retMap);
 
-			return DruidUtil.queryList(readConnection, querySql, dateFormat.format(sDate), dateFormat.format(eDate), lPlatform);
+				eDate = org.afflatus.utility.DateUtil.getDateBeforeOrAfter(eDate, -1);
+			}
+
+			return retlist;
 		} catch (SQLException e) {
+			e.printStackTrace();
 			logger.error("getActiveUser error" + e.getMessage());
 		}	finally {
 			DruidUtil.close(readConnection);
@@ -73,7 +88,7 @@ public class ActiveUserService {
 				params += "'" + day+"',";
 			}
 			params = params.substring(0, params.length()-1);
-			String querySql = "SELECT a.day, a.uv FROM bi_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+			String querySql = "SELECT a.day, a.uv, a.pv FROM bi_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 			return DruidUtil.queryList(readConnection, querySql, lPlatform);
 
 		} catch (SQLException e) {
@@ -93,7 +108,7 @@ public class ActiveUserService {
 				params += "'" + day+"',";
 			}
 			params = params.substring(0, params.length()-1);
-			String querySql = "SELECT a.day, a.uv FROM bi_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+			String querySql = "SELECT a.day, a.uv, a.pv FROM bi_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 			return DruidUtil.queryList(readConnection, querySql, lPlatform);
 
 		} catch (SQLException e) {

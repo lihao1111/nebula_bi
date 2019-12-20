@@ -50,7 +50,7 @@ public class OnlinePVUVService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String querySql = "SELECT *  FROM bi_online_pvuv_sum  WHERE platform_id =? AND day = ? ORDER BY hour DESC";
+			String querySql = "SELECT MAX(pv) pv, MAX(uv) uv  FROM bi_online_pvuv_sum  WHERE platform_id =? AND day = ?";
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sdate));
 
 			ri = new ResultInfo<>("success", retlist, retlist.size(), null);
