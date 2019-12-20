@@ -25,7 +25,7 @@ public class NebulaBiApplicationTests {
 
 
 			String tabName = "bi_linkpoint_day";
-			String querySql = "select * from "+ tabName+ "where day = ?";
+			String querySql = "select * from "+ tabName+ " where day = ?";
 
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, "2019-07-02");
 
