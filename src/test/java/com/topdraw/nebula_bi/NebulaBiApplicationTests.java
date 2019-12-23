@@ -1,5 +1,6 @@
 package com.topdraw.nebula_bi;
 
+import org.afflatus.utility.DateUtil;
 import org.afflatus.utility.DruidUtil;
 import org.afflatus.utility.MD5Util;
 import org.junit.Test;
@@ -8,10 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.sql.Connection;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -42,5 +42,32 @@ public class NebulaBiApplicationTests {
 	public void test001(){
 		System.out.println(MD5Util.encodePassword("123456"));
 	}
+
+	@Test
+	public void test002() throws ParseException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		Date date = dateFormat.parse("2019-12-20");
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		int i = calendar.get(Calendar.DAY_OF_WEEK);
+
+		System.out.println(dateFormat.format(DateUtil.getDateBeforeOrAfter(date, -(i-2))));
+
+		System.out.println(i);
+	}
+
+	@Test
+	public void test003() throws ParseException {
+
+		System.out.println("2" +2);
+		System.out.println(Integer.parseInt("2") +2);
+
+		System.out.println(1 / 2);
+
+		System.out.println(String.format("%.2f", Double.parseDouble("5") / 3));
+	}
+
 
 }
