@@ -4,6 +4,7 @@ import org.afflatus.infrastructure.common.IResultInfo;
 import org.afflatus.infrastructure.common.ResultInfo;
 import org.afflatus.utility.DateUtil;
 import org.afflatus.utility.DruidUtil;
+import org.omg.CORBA.OBJ_ADAPTER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,6 @@ public class OrderAnaService {
 
 			List<Map<String, Object>> retlistProducts = new ArrayList<Map<String, Object>>();		//返回list
 
-			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			//统计日期
 			/*Date dateEnd = DateUtil.getDateBeforeOrAfter(endDate, 1);
 			List<Date> listDays = DateUtil.days(startDate, dateEnd);
@@ -41,16 +41,14 @@ public class OrderAnaService {
 			List<Map<String, Object>> listProducts = DruidUtil.queryList(readConnection, querySql, lPlatform);*/
 
 			if("day".equals(chooseType)){	//日统计
-				/*retlistProducts = this.getDatasForDay(readConnection, listDays, listProducts, lPlatform);*/
+				retlistProducts = getOrderDetailForDay(readConnection, startDate, endDate, lPlatform);
 
-				String querySql = "SELECT * FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId " +
-						" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ?";
-
-				retlistProducts = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(startDate), dateFormat.format(endDate));
 
 			}else if("week".equals(chooseType)){	//周统计
-			}else if("month".equals(chooseType)){	//月统计
+				retlistProducts = getOrderDetailForWeek(readConnection, startDate, endDate, lPlatform);
 
+			}else if("month".equals(chooseType)){	//月统计
+				retlistProducts = getOrderDetailForMonth(readConnection, startDate, endDate, lPlatform);
 			}
 
 			ri = new ResultInfo<>(ResultInfo.BUSINESS_SUCCESS, retlistProducts, retlistProducts.size(), "");
@@ -65,7 +63,228 @@ public class OrderAnaService {
 	}
 
 
+	/**
+	 * 日 订购详情
+	 * @param readConnection
+	 * @param sDate
+	 * @param eDate
+	 * @param lPlatform
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<Map<String, Object>> getOrderDetailForDay(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
 
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		String querySql = "SELECT p.product_name, bp.*, ROUND(bp.ordered_num * 100/bdu.uv, 1) orderPerc FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId INNER JOIN" +
+				" bi_daily_user bdu ON bp.platform_id = bdu.platform_id AND bdu.day = bp.`day`" +
+				" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ?";
+
+		List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate), dateFormat.format(eDate));
+
+		if(list != null && list.size() > 0){
+			int sumOrderNum = 0;
+			int sumNewOrderNum = 0;
+			int sumOldNewReUorderedNum = 0;
+			int sumOldFirstUorderedNum = 0;
+			int sumUnSubscribedNum = 0;
+			for(Map<String, Object> map : list){
+				sumOrderNum += Integer.parseInt(map.get("ordered_num").toString());
+				sumNewOrderNum += Integer.parseInt(map.get("newUordered_num").toString());
+				sumOldNewReUorderedNum += Integer.parseInt(map.get("oldNewReUordered_num").toString());
+				sumOldFirstUorderedNum += Integer.parseInt(map.get("oldFirstUordered_num").toString());
+				sumUnSubscribedNum += Integer.parseInt(map.get("unSubscribed_num").toString());
+			}
+			Map<String, Object> sumMap = new HashMap<>();
+			sumMap.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(eDate));
+			sumMap.put("product_id", "合计");
+			sumMap.put("product_name", "合计");
+			sumMap.put("ordered_num", sumOrderNum);
+			sumMap.put("newUordered_num", sumNewOrderNum);
+			sumMap.put("oldNewReUordered_num", sumOldNewReUorderedNum);
+			sumMap.put("oldFirstUordered_num", sumOldFirstUorderedNum);
+			sumMap.put("unSubscribed_num", sumUnSubscribedNum);
+
+			list.add(sumMap);
+		}
+		return list;
+	}
+
+	/**
+	 * 周 订购详情
+	 * @param readConnection
+	 * @param sDate
+	 * @param eDate
+	 * @param lPlatform
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<Map<String, Object>> getOrderDetailForWeek(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		//获取sDate所在周的周一
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_WEEK);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-2));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		//获取eDate所在周的周一
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_WEEK);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-2));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> orderList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			//计算UV
+			querySql = "SELECT uv from bi_week_uv WHERE platform_id = ? AND day = ?";
+			Map<String, Object> uvMap = DruidUtil.queryUniqueResult(readConnection, querySql, lPlatform, dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, 6)));
+			if(uvMap == null || uvMap.size() == 0){ break; }
+			//订购数据
+			querySql = "SELECT p.product_id, p.product_name, sum(bp.ordered_num) ordered_num, " +
+					" sum(newUordered_num) newUordered_num, " +
+					" sum(oldNewReUordered_num) oldNewReUordered_num, " +
+					" sum(oldFirstUordered_num) oldFirstUordered_num, " +
+					" sum(unSubscribed_num) unSubscribed_num FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId INNER JOIN " +
+					" bi_daily_user bdu ON bp.platform_id = bdu.platform_id AND bdu.day = bp.`day` " +
+					" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ? group by p.product_id";
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate), dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, 6)));
+
+			for(Map<String, Object> map : list){
+				map.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, 6)));
+				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
+					double orderPerc = Double.parseDouble(map.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
+					map.put("orderPerc", String.format("%.2f", orderPerc));
+				}
+			}
+			//针对一个驻地多产品的汇总项
+			if(list != null && list.size() > 1){
+				int sumOrderNum = 0;
+				int sumNewOrderNum = 0;
+				int sumOldNewReUorderedNum = 0;
+				int sumOldFirstUorderedNum = 0;
+				int sumUnSubscribedNum = 0;
+				for(Map<String, Object> map : list){
+					sumOrderNum += Integer.parseInt(map.get("ordered_num").toString());
+					sumNewOrderNum += Integer.parseInt(map.get("newUordered_num").toString());
+					sumOldNewReUorderedNum += Integer.parseInt(map.get("oldNewReUordered_num").toString());
+					sumOldFirstUorderedNum += Integer.parseInt(map.get("oldFirstUordered_num").toString());
+					sumUnSubscribedNum += Integer.parseInt(map.get("unSubscribed_num").toString());
+				}
+				Map<String, Object> sumMap = new HashMap<>();
+				sumMap.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, 6)));
+				sumMap.put("product_id", "合计");
+				sumMap.put("product_name", "合计");
+				sumMap.put("ordered_num", sumOrderNum);
+				sumMap.put("newUordered_num", sumNewOrderNum);
+				sumMap.put("oldNewReUordered_num", sumOldNewReUorderedNum);
+				sumMap.put("oldFirstUordered_num", sumOldFirstUorderedNum);
+				sumMap.put("unSubscribed_num", sumUnSubscribedNum);
+				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
+					double orderSumPerc = Double.parseDouble(sumMap.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
+					sumMap.put("orderPerc", String.format("%.2f", orderSumPerc));
+				}
+
+				list.add(sumMap);
+			}
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, 7);
+			orderList.addAll(list);
+		}
+		return orderList;
+	}
+
+	/**
+	 *
+	 * @param readConnection
+	 * @param sDate
+	 * @param eDate
+	 * @param lPlatform
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<Map<String, Object>> getOrderDetailForMonth(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_MONTH);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-1));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_MONTH);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-1));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> orderList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			//计算UV
+			querySql = "SELECT uv from bi_month_uv WHERE platform_id = ? AND day = ?";
+			Map<String, Object> uvMap = DruidUtil.queryUniqueResult(readConnection, querySql, lPlatform, dateFormat.format(sDate));
+			if(uvMap == null || uvMap.size() == 0){ break; }
+			//订购数据
+			querySql = "SELECT p.product_id, p.product_name, sum(bp.ordered_num) ordered_num, " +
+					" sum(newUordered_num) newUordered_num, " +
+					" sum(oldNewReUordered_num) oldNewReUordered_num, " +
+					" sum(oldFirstUordered_num) oldFirstUordered_num, " +
+					" sum(unSubscribed_num) unSubscribed_num FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId INNER JOIN " +
+					" bi_daily_user bdu ON bp.platform_id = bdu.platform_id AND bdu.day = bp.`day` " +
+					" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ? group by p.product_id";
+
+			calendar.setTime(sDate);
+			int inval = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, lPlatform, dateFormat.format(sDate), dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, inval-1)));
+
+			for(Map<String, Object> map : list){
+				map.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, inval-1)));
+				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
+					double orderPerc = Double.parseDouble(map.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
+					map.put("orderPerc", String.format("%.2f", orderPerc));
+				}
+			}
+			//针对一个驻地多产品的汇总项
+			if(list != null && list.size() > 1){
+				int sumOrderNum = 0;
+				int sumNewOrderNum = 0;
+				int sumOldNewReUorderedNum = 0;
+				int sumOldFirstUorderedNum = 0;
+				int sumUnSubscribedNum = 0;
+				for(Map<String, Object> map : list){
+					sumOrderNum += Integer.parseInt(map.get("ordered_num").toString());
+					sumNewOrderNum += Integer.parseInt(map.get("newUordered_num").toString());
+					sumOldNewReUorderedNum += Integer.parseInt(map.get("oldNewReUordered_num").toString());
+					sumOldFirstUorderedNum += Integer.parseInt(map.get("oldFirstUordered_num").toString());
+					sumUnSubscribedNum += Integer.parseInt(map.get("unSubscribed_num").toString());
+				}
+				Map<String, Object> sumMap = new HashMap<>();
+				sumMap.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, inval-1)));
+				sumMap.put("product_id", "合计");
+				sumMap.put("product_name", "合计");
+				sumMap.put("ordered_num", sumOrderNum);
+				sumMap.put("newUordered_num", sumNewOrderNum);
+				sumMap.put("oldNewReUordered_num", sumOldNewReUorderedNum);
+				sumMap.put("oldFirstUordered_num", sumOldFirstUorderedNum);
+				sumMap.put("unSubscribed_num", sumUnSubscribedNum);
+				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
+					double orderSumPerc = Double.parseDouble(sumMap.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
+					sumMap.put("orderPerc", String.format("%.2f", orderSumPerc));
+				}
+
+				list.add(sumMap);
+			}
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, inval);
+			orderList.addAll(list);
+		}
+		return orderList;
+	}
 
 	/**
 	 * 老版本数据格式
