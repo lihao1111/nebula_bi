@@ -70,4 +70,22 @@ public class NebulaBiApplicationTests {
 	}
 
 
+	@Test
+	public void test004() throws ParseException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		Date date = dateFormat.parse("2019-11-01");
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		int i = calendar.get(Calendar.DAY_OF_MONTH);
+
+		int e = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+		System.out.println(dateFormat.format(DateUtil.getDateBeforeOrAfter(date, e-1)));
+		System.out.println(i);
+		System.out.println(e);
+
+
+	}
 }
