@@ -185,7 +185,7 @@ public class OrderAnaService {
 				sumMap.put("unSubscribed_num", sumUnSubscribedNum);
 				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
 					double orderSumPerc = Double.parseDouble(sumMap.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
-					sumMap.put("orderPerc", String.format("%.2f", orderSumPerc));
+					sumMap.put("orderPerc", String.format("%.3f", orderSumPerc));
 				}
 
 				list.add(sumMap);
@@ -274,7 +274,7 @@ public class OrderAnaService {
 				sumMap.put("unSubscribed_num", sumUnSubscribedNum);
 				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
 					double orderSumPerc = Double.parseDouble(sumMap.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
-					sumMap.put("orderPerc", String.format("%.2f", orderSumPerc));
+					sumMap.put("orderPerc", String.format("%.3f", orderSumPerc));
 				}
 
 				list.add(sumMap);
