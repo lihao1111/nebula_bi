@@ -12,10 +12,9 @@ import org.springframework.util.unit.DataUnit;
 
 import javax.servlet.http.HttpServletResponse;
 import java.sql.Connection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class UseTimeService {
 	private final static Logger logger = LoggerFactory.getLogger(UseTimeService.class);
@@ -26,18 +25,27 @@ public class UseTimeService {
     private static UseTimeService _instance = new UseTimeService();
 	private UseTimeService() { logger.info("Initial UseTimeService"); }
 
-    public IResultInfo<Map<String, Object>> fetchUseTime(Integer lPlatform, Date sDate, Date eDate) {
+    public IResultInfo<Map<String, Object>> fetchUseTime(Integer lPlatform, Date sDate, Date eDate, String chooseType) {
         IResultInfo<Map<String, Object>> ri;
         Connection readConnection = null;
         try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_usetime";
-			String querySql = "SELECT * FROM "+tabName+" a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
+			List<Map<String, Object>> retlistProducts = new ArrayList<Map<String, Object>>();		//返回list
 
-			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+			switch (chooseType){
+				case "day":
+					retlistProducts = getUseTimeForDay(readConnection, sDate, eDate, lPlatform);
+					break;
+				case "week":
+					retlistProducts = getUseTimeForWeek(readConnection, sDate, eDate, lPlatform);
+					break;
+				case "month":
+					retlistProducts = getUseTimeForMonth(readConnection, sDate, eDate, lPlatform);
+					break;
+			}
 
-			ri = new ResultInfo<>("success", listControl, listControl.size(), "");
+			ri = new ResultInfo<>("success", retlistProducts, retlistProducts.size(), "");
 
         } catch (Exception ex) {
             ri = new ResultInfo<>("failure", null, ex.getMessage());
@@ -48,26 +56,369 @@ public class UseTimeService {
         return ri;
     }
 
-	public IResultInfo<Map<String, Object>> fetchPlayTime(Integer lPlatform, Date sDate, Date eDate) {
+	public IResultInfo<Map<String, Object>> fetchPlayTime(Integer lPlatform, Date sDate, Date eDate, String chooseType) {
 		IResultInfo<Map<String, Object>> ri;
 		Connection readConnection = null;
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String tabName = "bi_validatetime";
-			String querySql = "SELECT * FROM "+tabName+" a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
+			List<Map<String, Object>> retlistProducts = new ArrayList<Map<String, Object>>();		//返回list
 
-			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+			switch (chooseType){
+				case "day":
+					retlistProducts = getPlayTimeForDay(readConnection, sDate, eDate, lPlatform);
+					break;
+				case "week":
+					retlistProducts = getPlayTimeForWeek(readConnection, sDate, eDate, lPlatform);
+					break;
+				case "month":
+					retlistProducts = getPlayTimeForMonth(readConnection, sDate, eDate, lPlatform);
+					break;
 
-			ri = new ResultInfo<>("success", listControl, listControl.size(), "");
+			}
+
+			ri = new ResultInfo<>("success", retlistProducts, retlistProducts.size(), "");
 
 		} catch (Exception ex) {
+			ex.printStackTrace();
 			ri = new ResultInfo<>("failure", null, ex.getMessage());
 			logger.error("fetchUseTime error" + ex.getMessage());
 		} finally {
 			DruidUtil.close(readConnection);
 		}
 		return ri;
+	}
+
+	public List<Map<String, Object>> getUseTimeForDay(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		String querySql = "SELECT * FROM bi_usetime a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
+		List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+
+		return list;
+	}
+
+	public List<Map<String, Object>> getUseTimeForWeek(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		//获取sDate所在周的周一
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_WEEK);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-2));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		//获取eDate所在周的周一
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_WEEK);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-2));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> useTimeList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			querySql = "SELECT count(*) sumCount FROM bi_usetime_detail where day = ? AND platform_id = ?";
+
+			Map<String, Object> map = DruidUtil.queryUniqueResult(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""), lPlatform);
+			if(map == null || Integer.parseInt(map.get("sumCount").toString()) == 0){
+				break;
+			}
+			querySql = "SELECT user_id, sum(use_time) use_time FROM bi_usetime_detail a WHERE day >=? AND day <= ? AND platform_id = ? group by user_id";
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+
+			int tim0_1 = 0;
+			int tim1_3 = 0;
+			int tim3_10 = 0;
+			int tim10_30 = 0;
+			int tim30_60 = 0;
+			int tim60_120 = 0;
+			int tim120 = 0;
+			double avgSumTime = 0.0;
+			for(Map<String, Object> objMap : list){
+				double avgTime = Double.parseDouble(Optional.ofNullable(objMap.get("use_time")).orElse(0).toString()) / 60 / 7;
+				avgSumTime += avgTime;
+				if(avgTime <=1){
+					tim0_1 += 1;
+				}else if(avgTime >1 && avgTime <= 3){
+					tim1_3 += 1;
+				}else if(avgTime >3 && avgTime <= 10){
+					tim3_10 += 1;
+				}else if(avgTime > 10 && avgTime <= 30){
+					tim10_30 += 1;
+				}else if(avgTime > 30 && avgTime <=60){
+					tim30_60 += 1;
+				}else if(avgTime > 60 && avgTime <= 120){
+					tim60_120 += 1;
+				}else if(avgTime > 120){
+					tim120 += 1;
+				}
+			}
+			Map<String, Object> retMap = new HashMap<>();
+			retMap.put("day", DateUtil.formatDate(sDate, "") +"至" + DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""));
+			retMap.put("avgtime", String.format("%.2f", avgSumTime / list.size()));
+			retMap.put("tim0_1", tim0_1);
+			retMap.put("tim1_3", tim1_3);
+			retMap.put("tim3_10", tim3_10);
+			retMap.put("tim10_30", tim10_30);
+			retMap.put("tim30_60", tim30_60);
+			retMap.put("tim60_120", tim60_120);
+			retMap.put("tim120", tim120);
+
+			useTimeList.add(retMap);
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, 7);
+		}
+
+		return useTimeList;
+	}
+
+	public List<Map<String, Object>> getUseTimeForMonth(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		//获取sDate所在月
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_MONTH);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-1));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		//获取eDate所在月
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_MONTH);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-1));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> useTimeList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			//获取所在月份的天数
+			calendar.setTime(sDate);
+			int inval = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+			querySql = "SELECT count(*) sumCount FROM bi_usetime_detail where day = ? AND platform_id = ?";
+
+			Map<String, Object> map = DruidUtil.queryUniqueResult(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, inval-1), ""), lPlatform);
+			if(map == null || Integer.parseInt(map.get("sumCount").toString()) == 0){
+				break;
+			}
+			querySql = "SELECT user_id, sum(use_time) use_time FROM bi_usetime_detail a WHERE day >=? AND day <= ? AND platform_id = ? group by user_id";
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, inval-1), ""), lPlatform);
+
+			int tim0_1 = 0;
+			int tim1_3 = 0;
+			int tim3_10 = 0;
+			int tim10_30 = 0;
+			int tim30_60 = 0;
+			int tim60_120 = 0;
+			int tim120 = 0;
+			double avgSumTime = 0.0;
+			for(Map<String, Object> objMap : list){
+				double avgTime = Double.parseDouble(Optional.ofNullable(objMap.get("use_time")).orElse(0).toString()) / 60 / inval;
+				avgSumTime += avgTime;
+				if(avgTime <=1){
+					tim0_1 += 1;
+				}else if(avgTime >1 && avgTime <= 3){
+					tim1_3 += 1;
+				}else if(avgTime >3 && avgTime <= 10){
+					tim3_10 += 1;
+				}else if(avgTime > 10 && avgTime <= 30){
+					tim10_30 += 1;
+				}else if(avgTime > 30 && avgTime <=60){
+					tim30_60 += 1;
+				}else if(avgTime > 60 && avgTime <= 120){
+					tim60_120 += 1;
+				}else if(avgTime > 120){
+					tim120 += 1;
+				}
+			}
+			Map<String, Object> retMap = new HashMap<>();
+			retMap.put("day", DateUtil.formatDate(sDate, "") +"至" + DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""));
+			retMap.put("avgtime", String.format("%.2f", avgSumTime / list.size()));
+			retMap.put("tim0_1", tim0_1);
+			retMap.put("tim1_3", tim1_3);
+			retMap.put("tim3_10", tim3_10);
+			retMap.put("tim10_30", tim10_30);
+			retMap.put("tim30_60", tim30_60);
+			retMap.put("tim60_120", tim60_120);
+			retMap.put("tim120", tim120);
+
+			useTimeList.add(retMap);
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, inval);
+		}
+
+		return useTimeList;
+	}
+
+	/**
+	 *
+	 * @param readConnection
+	 * @param sDate
+	 * @param eDate
+	 * @param lPlatform
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<Map<String, Object>> getPlayTimeForDay(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+		String querySql = "SELECT * FROM bi_validatetime a WHERE day >=? AND day <= ? AND platform_id = ? ORDER BY day desc";
+		List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+
+		return list;
+	}
+
+	public List<Map<String, Object>> getPlayTimeForWeek(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		//获取sDate所在周的周一
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_WEEK);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-2));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		//获取eDate所在周的周一
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_WEEK);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-2));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> playTimeList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			querySql = "SELECT count(*) sumCount FROM bi_validatetime_detail where day = ? AND platform_id = ?";
+
+			Map<String, Object> map = DruidUtil.queryUniqueResult(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""), lPlatform);
+			if(map == null || Integer.parseInt(map.get("sumCount").toString()) == 0){
+				break;
+			}
+			querySql = "SELECT user_id, sum(effec_time) effec_time FROM bi_validatetime_detail a WHERE day >=? AND day <= ? AND platform_id = ? group by user_id";
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(eDate, ""), lPlatform);
+
+			int tim0_1 = 0;
+			int tim1_3 = 0;
+			int tim3_10 = 0;
+			int tim10_30 = 0;
+			int tim30_60 = 0;
+			int tim60_120 = 0;
+			int tim120 = 0;
+			double avgSumTime = 0.0;
+			for(Map<String, Object> objMap : list){
+				double avgTime = Double.parseDouble(Optional.ofNullable(objMap.get("effec_time")).orElse(0).toString()) / 60 / 7;
+				avgSumTime += avgTime;
+				if(avgTime <=1){
+					tim0_1 += 1;
+				}else if(avgTime >1 && avgTime <= 3){
+					tim1_3 += 1;
+				}else if(avgTime >3 && avgTime <= 10){
+					tim3_10 += 1;
+				}else if(avgTime > 10 && avgTime <= 30){
+					tim10_30 += 1;
+				}else if(avgTime > 30 && avgTime <=60){
+					tim30_60 += 1;
+				}else if(avgTime > 60 && avgTime <= 120){
+					tim60_120 += 1;
+				}else if(avgTime > 120){
+					tim120 += 1;
+				}
+			}
+			Map<String, Object> retMap = new HashMap<>();
+			retMap.put("day", DateUtil.formatDate(sDate, "") +"至" + DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""));
+			retMap.put("avgtime", String.format("%.2f", avgSumTime / list.size()));
+			retMap.put("tim0_1", tim0_1);
+			retMap.put("tim1_3", tim1_3);
+			retMap.put("tim3_10", tim3_10);
+			retMap.put("tim10_30", tim10_30);
+			retMap.put("tim30_60", tim30_60);
+			retMap.put("tim60_120", tim60_120);
+			retMap.put("tim120", tim120);
+
+			playTimeList.add(retMap);
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, 7);
+		}
+
+		return playTimeList;
+	}
+
+	public List<Map<String, Object>> getPlayTimeForMonth(Connection readConnection, Date sDate, Date eDate, Integer lPlatform) throws SQLException {
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		//获取sDate所在月
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(sDate);
+		int sInd = calendar.get(Calendar.DAY_OF_MONTH);
+		sDate = DateUtil.getDateBeforeOrAfter(sDate, -(sInd-1));
+		System.out.println("开始日期:"+ dateFormat.format(sDate));
+
+		//获取eDate所在月
+		calendar.setTime(eDate);
+		int eInd = calendar.get(Calendar.DAY_OF_MONTH);
+		eDate = DateUtil.getDateBeforeOrAfter(eDate, -(eInd-1));
+		System.out.println("结束日期:"+ dateFormat.format(eDate));
+
+		String querySql;
+		List<Map<String, Object>> playTimeList = new ArrayList<>();
+		while(sDate.getTime() <= eDate.getTime()){
+			//获取所在月份的天数
+			calendar.setTime(sDate);
+			int inval = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+			querySql = "SELECT count(*) sumCount FROM bi_validatetime_detail where day = ? AND platform_id = ?";
+
+			Map<String, Object> map = DruidUtil.queryUniqueResult(readConnection, querySql, DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, inval-1), ""), lPlatform);
+			if(map == null || Integer.parseInt(map.get("sumCount").toString()) == 0){
+				break;
+			}
+			querySql = "SELECT user_id, sum(effec_time) effec_time FROM bi_validatetime_detail a WHERE day >=? AND day <= ? AND platform_id = ? group by user_id";
+			List<Map<String, Object>> list = DruidUtil.queryList(readConnection, querySql, DateUtil.formatDate(sDate, ""), DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, inval-1), ""), lPlatform);
+
+			int tim0_1 = 0;
+			int tim1_3 = 0;
+			int tim3_10 = 0;
+			int tim10_30 = 0;
+			int tim30_60 = 0;
+			int tim60_120 = 0;
+			int tim120 = 0;
+			double avgSumTime = 0.0;
+			for(Map<String, Object> objMap : list){
+				double avgTime = Double.parseDouble(Optional.ofNullable(objMap.get("effec_time")).orElse(0).toString()) / 60 / inval;
+				avgSumTime += avgTime;
+				if(avgTime <=1){
+					tim0_1 += 1;
+				}else if(avgTime >1 && avgTime <= 3){
+					tim1_3 += 1;
+				}else if(avgTime >3 && avgTime <= 10){
+					tim3_10 += 1;
+				}else if(avgTime > 10 && avgTime <= 30){
+					tim10_30 += 1;
+				}else if(avgTime > 30 && avgTime <=60){
+					tim30_60 += 1;
+				}else if(avgTime > 60 && avgTime <= 120){
+					tim60_120 += 1;
+				}else if(avgTime > 120){
+					tim120 += 1;
+				}
+			}
+			Map<String, Object> retMap = new HashMap<>();
+			retMap.put("day", DateUtil.formatDate(sDate, "") +"至" + DateUtil.formatDate(DateUtil.getDateBeforeOrAfter(sDate, 6), ""));
+			retMap.put("avgtime", String.format("%.2f", avgSumTime / list.size()));
+			retMap.put("tim0_1", tim0_1);
+			retMap.put("tim1_3", tim1_3);
+			retMap.put("tim3_10", tim3_10);
+			retMap.put("tim10_30", tim10_30);
+			retMap.put("tim30_60", tim30_60);
+			retMap.put("tim60_120", tim60_120);
+			retMap.put("tim120", tim120);
+
+			playTimeList.add(retMap);
+
+			sDate = DateUtil.getDateBeforeOrAfter(sDate, inval);
+		}
+
+		return playTimeList;
 	}
 
 	public IResultInfo<Map<String, Object>> fetchPlayCount(Integer lPlatform, Date sDate, Date eDate,

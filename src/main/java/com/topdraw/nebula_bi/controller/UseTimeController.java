@@ -36,8 +36,9 @@ public class UseTimeController {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String chooseType = request.getParameter("chooseType");
 
-			ri = useTimeService.fetchUseTime(platFormId, sDate, eDate);
+			ri = useTimeService.fetchUseTime(platFormId, sDate, eDate, chooseType);
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -60,8 +61,9 @@ public class UseTimeController {
 			sDate = dateFormat.parse(request.getParameter("startDate"));
 			eDate = dateFormat.parse(request.getParameter("endDate"));
 			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String chooseType = request.getParameter("chooseType");
 
-			ri = useTimeService.fetchPlayTime(platFormId, sDate, eDate);
+			ri = useTimeService.fetchPlayTime(platFormId, sDate, eDate, chooseType);
 
 		} catch (ParseException e) {
 			e.printStackTrace();
