@@ -76,7 +76,7 @@ public class OrderAnaService {
 
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-		String querySql = "SELECT p.product_name, bp.*, ROUND(bp.ordered_num * 100/bdu.uv, 1) orderPerc FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId INNER JOIN" +
+		String querySql = "SELECT p.product_name, bp.*, ROUND(bp.ordered_num * 100/bdu.uv, 2) orderPerc FROM  x_order_product_xx p left join bi_pro_ordered bp ON p.product_id = bp.productId INNER JOIN" +
 				" bi_daily_user bdu ON bp.platform_id = bdu.platform_id AND bdu.day = bp.`day`" +
 				" WHERE bp.platform_id = ? AND bp.day >= ? AND bp.day <= ?";
 
@@ -157,7 +157,7 @@ public class OrderAnaService {
 				map.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, 6)));
 				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
 					double orderPerc = Double.parseDouble(map.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
-					map.put("orderPerc", String.format("%.2f", orderPerc));
+					map.put("orderPerc", String.format("%.3f", orderPerc));
 				}
 			}
 			//针对一个驻地多产品的汇总项
@@ -246,7 +246,7 @@ public class OrderAnaService {
 				map.put("day", dateFormat.format(sDate) +"至" + dateFormat.format(DateUtil.getDateBeforeOrAfter(sDate, inval-1)));
 				if(Integer.parseInt(uvMap.get("uv").toString()) > 0){
 					double orderPerc = Double.parseDouble(map.get("ordered_num").toString()) * 100 / Integer.parseInt(uvMap.get("uv").toString());
-					map.put("orderPerc", String.format("%.2f", orderPerc));
+					map.put("orderPerc", String.format("%.3f", orderPerc));
 				}
 			}
 			//针对一个驻地多产品的汇总项
