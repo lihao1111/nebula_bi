@@ -519,7 +519,12 @@ public class ExcelUtilsNew {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String querySql = "SELECT * FROM x_hb_cp_info WHERE day >= ? AND day <= ? ORDER BY cp_name, day desc";
+			//String querySql = "SELECT * FROM x_hb_cp_info WHERE day >= ? AND day <= ? ORDER BY cp_name, day desc";
+			String querySql = "SELECT '万泰和兴' as cp_name, day, sum(play_count) play_count," +
+					" sum(play_num) play_num, sum(play_time) play_time, sum(order_num) order_num," +
+					" sum(order_cf_count) order_cf_count, sum(order_cf_num) order_cf_num" +
+					" FROM x_hb_cp_info WHERE day >= ? AND day <= ? group by day ORDER BY cp_name, day desc";
+
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, startDay, endDay);
 
 			//写入到excel
@@ -552,11 +557,9 @@ public class ExcelUtilsNew {
 			//表头数据
 			String[] titleArr = new String[]{"CP名称", "日期", "点播次数", "点播用户", "点播时长(时)", "订购数", "订购触发数", "订购触发人数"};
 			for (int i = 0; i < 8; i++) {
-				XSSFCell cell = row.createCell(i);
-				cell.setCellStyle(cellStyle);
+				XSSFCell cell = row.createCell(i);cell.setCellStyle(cellStyle);
 				XSSFRichTextString text = new XSSFRichTextString(titleArr[i]);
 				cell.setCellValue(text);
-				i++;
 			}
 			//表格内容
 			int rowN = 1;
@@ -575,32 +578,32 @@ public class ExcelUtilsNew {
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString(map.get("play_count").toString());
+				text = new XSSFRichTextString(new Double(map.get("play_count").toString()).intValue()+"");
 				cell.setCellValue(text);
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString(map.get("play_num").toString());
+				text = new XSSFRichTextString(new Double(map.get("play_num").toString()).intValue()+"");
 				cell.setCellValue(text);
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString((Integer.parseInt(map.get("play_time").toString()) / 60 / 60) + "");
+				text = new XSSFRichTextString(String.format("%.2f", Double.parseDouble(map.get("play_time").toString()) / 60 / 60));
 				cell.setCellValue(text);
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString(map.get("order_num").toString());
+				text = new XSSFRichTextString(new Double(map.get("order_num").toString()).intValue()+"");
 				cell.setCellValue(text);
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString(map.get("order_cf_count").toString());
+				text = new XSSFRichTextString(new Double(map.get("order_cf_count").toString()).intValue()+"");
 				cell.setCellValue(text);
 
 				cell = row.createCell(j++);
 				cell.setCellStyle(cellStyleBody);
-				text = new XSSFRichTextString(map.get("order_cf_num").toString());
+				text = new XSSFRichTextString(new Double(map.get("order_cf_num").toString()).intValue()+"");
 				cell.setCellValue(text);
 
 				rowN++;

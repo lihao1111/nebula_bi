@@ -145,7 +145,11 @@ public class HBMusicHelpService {
 		try {
 			readConnection = DruidUtil.getRandomReadConnection();
 
-			String querySql = "SELECT * FROM x_hb_cp_info WHERE day >= ? AND day <= ? ORDER BY cp_name, day desc";
+			//String querySql = "SELECT * FROM x_hb_cp_info WHERE day >= ? AND day <= ? group by day ORDER BY cp_name, day desc";
+			String querySql = "SELECT '万泰和兴' as cp_name, day, sum(play_count) play_count," +
+					" sum(play_num) play_num, sum(play_time) play_time, sum(order_num) order_num," +
+					" sum(order_cf_count) order_cf_count, sum(order_cf_num) order_cf_num" +
+					" FROM x_hb_cp_info WHERE day >= ? AND day <= ? group by day ORDER BY cp_name, day desc";
 
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql, dateFormat.format(sDate), dateFormat.format(eDate));
 
@@ -184,7 +188,7 @@ public class HBMusicHelpService {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 			//彩虹音乐和万泰和兴
-			String querySql = "(SELECT cpw.day, cp.name, m.name mediaName, cpw.play_count, cpw.play_num from x_hb_cpPlay_week cpw " +
+			/*String querySql = "(SELECT cpw.day, cp.name, m.name mediaName, cpw.play_count, cpw.play_num from x_hb_cpPlay_week cpw " +
 					"INNER JOIN z_media_local zm ON cpw.media_id = zm.local_id and  zm.platform_id = 14 " +
 					"INNER JOIN x_media m ON zm.entity_code = m.code " +
 					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " +
@@ -194,8 +198,13 @@ public class HBMusicHelpService {
 					"INNER JOIN z_media_local zm ON cpw.media_id = zm.local_id and  zm.platform_id = 14 " +
 					"INNER JOIN x_media m ON zm.entity_code = m.code " +
 					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " +
-					"WHERE cp.`id` = 47 AND cpw.`day` = '"+dateFormat.format(sDate)+"' order by CONVERT(cpw.play_count, SIGNED) desc limit 10)";
+					"WHERE cp.`id` = 47 AND cpw.`day` = '"+dateFormat.format(sDate)+"' order by CONVERT(cpw.play_count, SIGNED) desc limit 10)";*/
 
+			String querySql = "SELECT '万泰和兴' as name, cpw.day, m.name mediaName, cpw.play_count, cpw.play_num from x_hb_cpPlay_week cpw " +
+					"INNER JOIN z_media_local zm ON cpw.media_id = zm.local_id and  zm.platform_id = 14 " +
+					"INNER JOIN x_media m ON zm.entity_code = m.code " +
+					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " +
+					"WHERE cp.`id` in (44, 47) AND cpw.`day` = '"+dateFormat.format(sDate)+"' order by CONVERT(cpw.play_count, SIGNED) desc limit 10";
 
 			List<Map<String, Object>> retList = DruidUtil.queryList(readConnection, querySql);
 
