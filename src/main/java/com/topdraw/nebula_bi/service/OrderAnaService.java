@@ -578,7 +578,7 @@ public class OrderAnaService {
 			params += "'" + day+"',";
 		}
 		params = params.substring(0, params.length()-1);
-		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		String querySql = "SELECT a.day, a.uv, a.pv FROM bi_orderpage_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 		return DruidUtil.queryList(readConnection, querySql, lPlatform);
 	}
 
@@ -589,7 +589,7 @@ public class OrderAnaService {
 			params += "'" + day+"',";
 		}
 		params = params.substring(0, params.length()-1);
-		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		String querySql = "SELECT a.day, a.uv, a.pv FROM bi_orderpage_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 		return DruidUtil.queryList(readConnection, querySql, lPlatform);
 	}
 
