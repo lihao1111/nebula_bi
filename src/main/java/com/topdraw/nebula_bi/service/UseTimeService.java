@@ -11,10 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataUnit;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class UseTimeService {
 	private final static Logger logger = LoggerFactory.getLogger(UseTimeService.class);
@@ -610,6 +612,55 @@ public class UseTimeService {
 		}
 	}
 
+	public void loadMediaExport(HttpServletResponse response, Integer lPlatform, Date sDate, Date eDate,
+															String contentType, String contentCP, String contentKey) {
+		IResultInfo<Map<String, Object>> ri = null;
+		Connection readConnection = null;
+		try {
+			readConnection = DruidUtil.getRandomReadConnection();
+
+			String strWhere = " WHERE biv.day >='"+DateUtil.formatDate(sDate, "")+"' AND biv.day <= '"+DateUtil.formatDate(eDate, "")+"' AND biv.platform_id = "+lPlatform+" ";
+
+			if(StringUtil.hasText(contentType)){
+				strWhere += " AND m.type =" + contentType;
+			}
+			if(StringUtil.hasText(contentCP)){
+				strWhere += " AND cp.id = " + contentCP;
+			}
+			if(StringUtil.hasText(contentKey)){
+				strWhere += " AND m.name like '%" +contentKey+ "%'";
+			}
+
+			String querySql = "SELECT biv.day day, biv.media_id media_id, sum(biv.play_count) sumCount, m.`name` media_name, cp.`name` cp_name " +
+					"FROM bi_playcount_day biv " +
+					"INNER JOIN z_media_local zm ON biv.media_id = zm.local_id AND biv.platform_id = zm.platform_id " +
+					"INNER JOIN x_media m ON zm.entity_code = m.code " +
+					"INNER JOIN x_content_provider cp ON m.content_provider_id = cp.id " + strWhere + " group by(media_id) ORDER BY biv.play_count DESC";
+			List<Map<String, Object>> listControl = DruidUtil.queryList(readConnection, querySql);
+
+			listControl.forEach(item ->{
+				item.put("day", DateUtil.formatDate(sDate, "")+"-"+DateUtil.formatDate(eDate, ""));
+			});
+
+			Map<String, Object> mapColumn = new LinkedHashMap<>();
+			mapColumn.put("day", "日期");
+			mapColumn.put("media_id", "内容ID");
+			mapColumn.put("media_name", "内容名称");
+			mapColumn.put("cp_name", "供应商");
+			mapColumn.put("sumCount", "完整播放次数");
 
 
+			//导出数据
+			ExcelUtilsNew.ExcelExportOutPut(response, listControl, mapColumn, "playSumCount_"+ DateUtil.formatDate(new Date(), ""));
+
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			logger.error("loadMediaExport error" + e.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			DruidUtil.close(readConnection);
+		}
+	}
 }

@@ -204,4 +204,29 @@ public class UseTimeController {
 		}
 	}
 
+	@RequestMapping("/loadMediaExport")
+	public void loadMediaExport(HttpServletRequest request, HttpServletResponse response) {
+		logger.info("loadMediaExport");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		UseTimeService useTimeService = UseTimeService.getInstance();
+		Date sDate;
+		Date eDate;
+		try {
+			sDate = dateFormat.parse(request.getParameter("startDate"));
+			eDate = dateFormat.parse(request.getParameter("endDate"));
+			Integer platFormId = Integer.parseInt(request.getParameter("platFormId"));
+			String contentType = request.getParameter("contentType");
+			String contentCP = request.getParameter("contentCP");
+			String contentKey = request.getParameter("contentKey");
+
+			useTimeService.loadMediaExport(response, platFormId, sDate, eDate,
+					contentType, contentCP, contentKey);
+
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+	}
+
+
 }
