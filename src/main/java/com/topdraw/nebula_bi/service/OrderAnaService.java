@@ -486,7 +486,7 @@ public class OrderAnaService {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 			String querySql = "SELECT * FROM bi_orderPerUi bil " +
-					"LEFT JOIN bi_ui_deep bid ON bil.ui = bid.ui_name WHERE " +
+					"LEFT JOIN bi_ui_deep bid ON bil.ui = bid.ui_name AND bil.platform_id = bid.platform_id WHERE " +
 					"bil.platform_id = ? AND day >= ? AND day <= ? ORDER BY bil.day desc, bil.orderingPerUi_nums desc ";
 /*
 			String querySql = "SELECT bil.linkLNode, sum(link_num) sumNum, bid.describe FROM bi_linkpoint_day bil " +
