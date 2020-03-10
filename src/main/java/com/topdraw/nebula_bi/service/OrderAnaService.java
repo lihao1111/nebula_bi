@@ -486,7 +486,7 @@ public class OrderAnaService {
 			readConnection = DruidUtil.getRandomReadConnection();
 
 			String querySql = "SELECT * FROM bi_orderPerUi bil " +
-					"LEFT JOIN bi_ui_deep bid ON bil.ui = bid.ui_name WHERE " +
+					"LEFT JOIN bi_ui_deep bid ON bil.ui = bid.ui_name AND bil.platform_id = bid.platform_id WHERE " +
 					"bil.platform_id = ? AND day >= ? AND day <= ? ORDER BY bil.day desc, bil.orderingPerUi_nums desc ";
 /*
 			String querySql = "SELECT bil.linkLNode, sum(link_num) sumNum, bid.describe FROM bi_linkpoint_day bil " +
@@ -578,7 +578,7 @@ public class OrderAnaService {
 			params += "'" + day+"',";
 		}
 		params = params.substring(0, params.length()-1);
-		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		String querySql = "SELECT a.day, a.uv, a.pv FROM bi_orderpage_week_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 		return DruidUtil.queryList(readConnection, querySql, lPlatform);
 	}
 
@@ -589,7 +589,7 @@ public class OrderAnaService {
 			params += "'" + day+"',";
 		}
 		params = params.substring(0, params.length()-1);
-		String querySql = "SELECT a.day, a.uv FROM bi_orderpage_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
+		String querySql = "SELECT a.day, a.uv, a.pv FROM bi_orderpage_month_uv a WHERE day in (" + params + ") AND platform_id = ? ORDER BY day desc";
 		return DruidUtil.queryList(readConnection, querySql, lPlatform);
 	}
 

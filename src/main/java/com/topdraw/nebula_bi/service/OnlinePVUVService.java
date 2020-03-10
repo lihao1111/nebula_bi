@@ -35,6 +35,7 @@ public class OnlinePVUVService {
 
 			ri = new ResultInfo<>("success", retlist, retlist.size(), null);
 		} catch (SQLException e) {
+			e.printStackTrace();
 			logger.error("getOnlinePVUV error" + e.getMessage());
 		} finally {
 			DruidUtil.close(readConnection);
