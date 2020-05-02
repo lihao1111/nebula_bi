@@ -29,7 +29,7 @@ public class NebulaBiApplicationTests {
 
 			List<Map<String, Object>> retlist = DruidUtil.queryList(readConnection, querySql, "2019-07-02");
 
-
+			System.out.println(1);
 
 		} catch (Exception e){
 			e.printStackTrace();
